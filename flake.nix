@@ -19,27 +19,40 @@
     
     mac-app-util = {
       url = "github:hraban/mac-app-util";
-      inputs.cl-nix-lite.url = "github:r4v3n6101/cl-nix-lite/url-fix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, haruka-nur, home-manager, mac-app-util, ... }@attrs:
+  outputs = { self, nixpkgs, home-manager, nix-darwin, mac-app-util, haruka-nur, ... }@inputs:
     let
       username = "haruka";
       darwin-workstation = "apple-seeds";
-    in {
-      darwinConfigurations.${darwin-workstation} = attrs.nix-darwin.lib.darwinSystem {
+      darwinSystem = "aarch64-darwin";
+      amd64 = nixpkgs.legacyPackages.x86_64-linux;
+    in 
+    {
+      darwinConfigurations.${darwin-workstation} = nix-darwin.lib.darwinSystem {
+        system = darwinSystem;
+        specialArgs = { inherit inputs username darwin-workstation; };
         modules = [
           mac-app-util.darwinModules.default
           home-manager.darwinModules.home-manager
-          { nixpkgs.overlays = [ haruka-nur.overlays.mac-apps ]; } 
-          { home-manager.sharedModules = [ mac-app-util.homeManagerModules.default ];}
-          (import ./configs/darwin.nix {
-            inherit darwin-workstation;
-            inherit username;
-          })
+          ./configs/darwin.nix
+          {
+            nixpkgs.overlays = [ haruka-nur.overlays.mac-apps ];
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit username; };
+            home-manager.sharedModules = [ mac-app-util.homeManagerModules.default ];
+            home-manager.users.${username} = import ./configs/home.nix;
+          }
         ];
+      };
+
+      homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
+        pkgs = amd64;
+        extraSpecialArgs = { inherit username; };
+        modules = [ ./configs/home.nix ];
       };
     };
 }

@@ -1,23 +1,28 @@
-{ username }:
-{ pkgs, config, lib, ... }: {
+{ username, pkgs, config, lib, ... }:
 
+let
+  isDarwin = pkgs.stdenv.isDarwin;
+  isLinux = pkgs.stdenv.isLinux;
+  homeDirectory =     # Explicit home directory logic
+      if isDarwin then "/Users/${username}"
+      else if isLinux then "/home/${username}"
+      else builtins.throw "wtf is this system";
+in
+
+{
   # --- Home Manager Configuration ---
   home = {
     stateVersion = "24.11";
     username = username;
-    homeDirectory = if pkgs.stdenv.isDarwin then
-      "/Users/${username}"
-    else
-      "/home/${username}";
-      
+    inherit homeDirectory;
+
     sessionVariables = {
-      PYTHONDONTWRITEBYTECODE = 1;
-      PYTHONSTARTUP = "$HOME/.pythonrc";
+      PYTHONDONTWRITEBYTECODE = "1";
+      PYTHON_HISTORY = "/dev/null";
     };
 
     # --- Packages ---
     packages = with pkgs; [
-      # Fonts
       noto-fonts
       source-han-sans
       source-han-mono
@@ -25,48 +30,43 @@
       source-han-code-jp
       meslo-lgs-nf
 
-      # CLI Utilities
       fortune-kind
       cowsay
       eza
       bat
       imagemagick
-      python312Packages.python
-      nix-search-cli
+      python315FreeThreading
+      uv
       htop
       wget
       unar
       ffmpeg
       asciinema
       asciinema-agg
-
-      # GUI Apps
+    ] ++ lib.optionals isLinux [
+      # Linux GUI apps: ALWAYS USE FLATPAK!!!!!!
+      hello   # hello from the other side
+              # I must've called a thousand times
+    ] ++ lib.optionals isDarwin [
       librewolf
       vscodium
       audacity
       ungoogled-chromium
       qbittorrent
-    ] ++ (if pkgs.stdenv.isLinux then [
-      # Linux specific
-    ] else [
-      # MacOS specific
+      telegram-desktop
+      # MacOS specific utilities
       libreoffice-bin
       whisky
       lunarfyi
       iina
       utm
-    ]);
+      kap-bin
+    ];
 
     # --- Dotfiles Management ---
     file = {
-      ".nanorc".text = ''
-        include ${pkgs.nano}/share/nano/*.nanorc
-      '';
-
-      ".pythonrc".text = ''
-        import readline
-        readline.write_history_file = lambda *args: None
-      '';
+      ".nanorc".text = ''include ${pkgs.nanorc}/share/*.nanorc'';
+      ".bash_sessions_disable".text = "";
     };
   };
 
@@ -74,96 +74,168 @@
   fonts.fontconfig.enable = true;
 
   # --- Programs Configuration ---
-  programs = {
-    direnv = {
-      enable = true;
-      enableFishIntegration = false;
-      enableZshIntegration = true;
-      nix-direnv.enable = true;
-    };
+  programs.direnv = {
+    enable = true;
+    enableZshIntegration = true;
+    nix-direnv.enable = true;
+  };
 
-    git = {
-      enable = true;
-      ignores = [
-        "*.DS_Store"
-        "*__pycache__/"
-      ];
-      settings = {
-        init = { defaultBranch = "main"; };
-        user = {
-          email = "106440141+fractuscontext@users.noreply.github.com";
-          name = "fractuscontext";
-          signingkey = "~/.ssh/id_rsa.pub";
-        };
-        gpg = { format = "ssh"; };
-        commit = { gpgSign = true; };
+  programs.git = {
+    enable = true;
+    ignores = [ "*.DS_Store" "*__pycache__/" ];
+    settings = {
+      init = { defaultBranch = "main"; };
+      user = {
+        email = "106440141+fractuscontext@users.noreply.github.com";
+        name = "fractuscontext";
+        signingkey = "${homeDirectory}/.ssh/id_rsa.pub";
       };
+      gpg = { format = "ssh"; };
+      commit = { gpgSign = true; };
     };
+  };
 
-    bash = {
-      enable = true;
-      bashrcExtra = ''
-        unset HISTFILE
-        SHELL_SESSION_HISTORY=0
-      '';
-    };
+  programs.bash = {
+    enable = true;
+    bashrcExtra = ''unset HISTFILE'';
+  };
 
-    zsh = {
-      enable = true;
-      autocd = true;
-      autosuggestion.enable = true;
-      syntaxHighlighting.enable = true;
+  programs.zsh = {
+    enable = true;
+    autosuggestion.enable = true;
+    syntaxHighlighting.enable = true;
 
-      initContent = ''
-        # --- Completion & History ---
-        zstyle ':completion:*' menu select
-        zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
-        
-        export LESSHISTFILE=-
-        setopt interactivecomments
-        setopt HIST_IGNORE_SPACE
+    initContent = ''
+      # --- Completion & Colors ---
+      zstyle ':completion:*' menu select
+      zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
+      
+      # --- History Config ---
+      HISTFILE="$HOME/.zsh_history"
+      HISTSIZE=50000
+      SAVEHIST=10000
+      export LESSHISTFILE=-
 
-        # Ignore useless commands
-        HISTORY_IGNORE='(less *|ls|ls *|la|which *|reboot|exit|git *|echo *|cd|cd *|clear|codium *|open *)'
+      setopt AUTO_CD                  # Type 'src' instead of 'cd src'
+      setopt AUTO_PUSHD               # cd automatically pushes old dir to stack
+      setopt PUSHD_IGNORE_DUPS        # Don't push duplicate directories to stack
+      setopt INTERACTIVE_COMMENTS     # Allow comments starting with #
+      setopt HIST_IGNORE_SPACE        # Don't save commands starting with a space
+      setopt HIST_IGNORE_ALL_DUPS     # Remove older duplicate entries
+      setopt INC_APPEND_HISTORY       # Write to history file immediately
+      setopt HIST_VERIFY              # Don't execute immediate upon history expansion
+      setopt EXTENDED_GLOB            # Required for complex HISTORY_IGNORE patterns
 
-        # --- Powerlevel10k ---
-        if [[ $TERM = "xterm-256color" ]]; then
-            source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
-            source ~/.p10k.zsh
+      # --- Smart History Filtering ---
+      zshaddhistory() {
+        local line="''${1%%$'\n'}"
+        local cmd="''${''${(z)line}[1]}"
+
+        # --- 1. Always save lines with pipes (|) or redirects (> <) ---
+        if [[ "$line" == *['|<>']* ]]; then
+          return 0
         fi
 
-        # --- Custom Functions ---
-        nix-shell-flake() { 
-          pkgs=() 
-          for x in "$@"; do pkgs+=("nixpkgs#$x"); done
-          nix shell "''${pkgs[@]}" 
-        }
+        # --- 2. Filter Noisy Commands without pipes/redirects ---
+        case "$line" in
+          # > Navigation & Listing
+          ls|ls\ *|ll|la|exa\ *|eza\ *|tree\ *)               return 1 ;;
+          cd|cd\ *|pwd|popd|popd\ *|pushd|pushd\ *|dirs)      return 1 ;;
 
-        fix-quarantine() {
-          sudo xattr -rd com.apple.quarantine "$1"
-        }
+          # > Session & Process Management    
+          clear|exit|history|date|jobs|fg|bg)                 return 1 ;;
+          htop|htop\ *)                                       return 1 ;;
 
-        # --- Welcome Banner ---
-        ${pkgs.fortune-kind}/bin/fortune-kind | ${pkgs.cowsay}/bin/cowsay -f koala
-      '';
+          # > Help & Lookups
+          man\ *|which\ *|file\ *|open\ *|codium\ *)          return 1 ;;
+          ping\ *|dig\ *|nslookup\ *)                         return 1 ;;
+          
+          # > File Reading (bat/cat/less)
+          # (Note: These are only ignored if NOT piped/redirected)
+          echo\ *|cat\ *|less\ *|bat\ *)                      return 1 ;;
 
-      shellAliases = {
-        cat = "${pkgs.bat}/bin/bat --paging=never";
-        less = "${pkgs.bat}/bin/bat";
-        ls = "${pkgs.eza}/bin/eza -l --no-permissions --no-time --no-user -o -X -h --group-directories-first -F";
-        gc = "sudo nix-collect-garbage -d";
-        fix-rsa = "chmod 600 ~/.ssh/id_rsa";
-        fix-launchpad = "sudo find 2>/dev/null /private/var/folders/ -type d -name com.apple.dock.launchpad -exec rm -rf {} +; killall Dock";
-        fix-dock-size = "defaults delete com.apple.dock tilesize; killall Dock";
-        fix-ds_store = "chflags nouchg .DS_Store; rm -rf .DS_Store; pkill Finder; touch .DS_Store; chflags uchg .DS_Store";
-      };
+          # > Environment Noise
+          source\ .venv*|source\ venv*|conda\ activate\ *)    return 1 ;;
+          
+          # > Git Status/Navigation (Read-only operations)
+          git\ status|git\ status\ *|git\ add\ *|git\ diff\ *)          return 1 ;;
+          git\ log\ *|git\ show\ *|git\ branch\ *)                      return 1 ;;
+          git\ switch\ *|git\ checkout\ *|git\ fetch\ *|git\ pull\ *)   return 1 ;;
+          git\ push\ *|git\ stash\ *|git\ restore\ *)                   return 1 ;;
+        esac
+
+        # --- 3. Prevent "Command Not Found" (err 127) from being saved ---
+        whence "$cmd" > /dev/null || return 1
+        return 0
+      }
+
+      # --- Powerlevel10k ---
+      if [[ $TERM = "xterm-256color" ]]; then
+          source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
+          [[ -f ${homeDirectory}/.p10k.zsh ]] && source ${homeDirectory}/.p10k.zsh
+      fi
+
+      # --- Custom Functions ---
+      ns() { 
+        local pkg_args=() 
+        for x in "$@"; do pkg_args+=("nixpkgs#$x"); done
+        nix shell "''${pkg_args[@]}" 
+      }
+
+      fix-quarantine() {
+        sudo xattr -rd com.apple.quarantine "$1"
+      }
+
+      # --- Prettier ls ---
+      ls() {
+        if [[ $# -eq 0 ]]; then
+          # No arguments? Use the clean, octal, minimal view
+          ${pkgs.eza}/bin/eza \
+            --long \
+            --octal-permissions \
+            --no-permissions \
+            --no-time \
+            --no-user \
+            --dereference \
+            --icons=auto \
+            --group-directories-first
+        else
+          # Arguments provided (e.g., ls -al)? Use standard eza behavior
+          ${pkgs.eza}/bin/eza --group-directories-first "$@"
+        fi
+      }
+
+      # --- Welcome Banner ---
+      ${pkgs.fortune-kind}/bin/fortune-kind | ${pkgs.cowsay}/bin/cowsay -f koala
+    '';
+
+    shellAliases = {
+      # --- Modern Replacements ---
+      # -pp: Plain (no line numbers/grid), behaves like real cat for copy-paste
+      cat = "${pkgs.bat}/bin/bat -pp";
+      less = "${pkgs.bat}/bin/bat";
+
+      # --- Safety & QoL ---
+      mkdir = "mkdir -p";       # Auto-create parent directories
+      rm = "rm -i";             # Ask before deleting
+      mv = "mv -i";             # Ask before overwriting
+      cp = "cp -i";             # Ask before overwriting
+
+      # --- Nix ---
+      gc = "sudo nix-collect-garbage -d"; 
+      
+      # --- macOS ---
+      fix-rsa = "chmod 600 ${homeDirectory}/.ssh/id_rsa";
+      fix-launchpad = "sudo find 2>/dev/null /private/var/folders/ -type d -name com.apple.dock.launchpad -exec rm -rf {} +; killall Dock";
+      fix-dock-size = "defaults delete com.apple.dock tilesize; killall Dock";
+      fix-ds_store = "chflags nouchg .DS_Store; rm -rf .DS_Store; pkill Finder; touch .DS_Store; chflags uchg .DS_Store";
     };
   };
 
   # --- MacOS (Darwin) Specific Settings ---
-  targets.darwin.defaults = {
+  targets.darwin.defaults = lib.mkIf isDarwin {
     NSGlobalDomain = { 
-      _NS_4445425547 = true; # Enable Debug Menu
+      _NS_4445425547 = true;
       AppleShowAllExtensions = true; 
       "com.apple.mouse.tapBehavior" = 1; 
       AppleICUForce24HourTime = 1;
@@ -171,24 +243,24 @@
     "com.apple.AppleMultitouchTrackpad" = {
       ActuationStrength = 0;
       Clicking = 1;
-     };
+      };
     "com.apple.desktopservices" = {
       DSDontWriteNetworkStores = true;
       DSDontWriteUSBStores = true;
     };
     "com.apple.finder" = {
-      _FXSortFoldersFirst = true;
-      FXPreferredViewStyle = "Nlsv"; # List view
-      AppleShowAllFiles = true;
-      QuitMenuItem = true;
-      FXEnableExtensionChangeWarning = false;
-      ShowPathbar = true;
+      _FXSortFoldersFirst = true;               # Folders before files
+      FXPreferredViewStyle = "Nlsv";            # List view by default
+      AppleShowAllFiles = true;                 # Show hidden files
+      QuitMenuItem = true;                      # Allow quitting Finder (Cmd+Q)
+      FXEnableExtensionChangeWarning = false;   # Don't warn about changing extensions
+      ShowPathbar = true;                       # Show path at bottom
     };
     "com.apple.controlcenter.plist" = { BatteryShowPercentage = true; };
-  }; 
+  };
 
   # --- Linux (GNOME) Specific Settings ---
-  dconf.settings = if pkgs.stdenv.isLinux then {
+  dconf.settings = lib.mkIf isLinux {
     "org/gnome/desktop/peripherals/touchpad" = {
       "natural-scroll" = false;
       "tap-to-click" = true;
@@ -229,5 +301,5 @@
       ];
     };
     "org/gnome/shell" = { app-picker-layout = [ ]; };
-  } else {};
+  };
 }

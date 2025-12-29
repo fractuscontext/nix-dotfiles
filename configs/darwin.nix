@@ -1,5 +1,5 @@
-{ darwin-workstation, username }:
-{ pkgs, home-manager, ... }: {
+{ lib, pkgs, config, username, darwin-workstation, ... }:
+{
   networking = {
     hostName = darwin-workstation;
     localHostName = darwin-workstation;
@@ -15,16 +15,9 @@
   # Configure zsh as an interactive shell.
   programs.zsh.enable = true;
 
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    users.${username} = (import ./home.nix { inherit username; });
-  };
-
   # Enable flakes and optimise store during every build
   nix.settings.experimental-features = "nix-command flakes";
 
-  nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 5;
 
   system.activationScripts.postActivation.text = ''
@@ -35,7 +28,9 @@
     echo "Muting Startup Chime"
     sudo nvram StartupMute=%01
 
-    # 3. Block OCSP (Hosts File Modification)
+    echo "Disabling extended quarantine attribute for downloaded"
+    sudo defaults write com.apple.LaunchServices 'LSQuarantine' -bool NO
+
     echo "Configuring Hosts file to block OCSP..."
     HOSTS_FILE="/etc/hosts"
 
