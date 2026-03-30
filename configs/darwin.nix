@@ -1,12 +1,17 @@
-{ lib, pkgs, config, username, darwin-workstation, ... }:
+{
+  pkgs,
+  username,
+  hostname,
+  ...
+}:
 {
   networking = {
-    hostName = darwin-workstation;
-    localHostName = darwin-workstation;
-    computerName = darwin-workstation;
-  };  
+    hostName = hostname;
+    localHostName = hostname;
+    computerName = hostname;
+  };
 
-  # Define user 
+  # Define user
   users.users.${username} = {
     name = username;
     home = "/Users/${username}";
@@ -19,31 +24,6 @@
   nix.settings.experimental-features = "nix-command flakes";
 
   system.stateVersion = 5;
-
-  system.activationScripts.postActivation.text = ''
-    # Enable Developer Mode for Terminal (allows debugging tools)
-    echo "Enabling Developer Mode for Terminal..."
-    spctl developer-mode enable-terminal
-
-    echo "Muting Startup Chime"
-    sudo nvram StartupMute=%01
-
-    echo "Disabling extended quarantine attribute for downloaded"
-    sudo defaults write com.apple.LaunchServices 'LSQuarantine' -bool NO
-
-    echo "Configuring Hosts file to block OCSP..."
-    HOSTS_FILE="/etc/hosts"
-
-    if ! grep -q "ocsp.apple.com" "$HOSTS_FILE"; then
-      echo "127.0.0.1 ocsp.apple.com" | sudo tee -a "$HOSTS_FILE" > /dev/null
-    fi
-    
-    if ! grep -q "ocsp2.apple.com" "$HOSTS_FILE"; then
-      echo "127.0.0.1 ocsp2.apple.com" | sudo tee -a "$HOSTS_FILE" > /dev/null
-    fi
-
-    echo "Run spctl --master-disable if needed"
-  '';
 
   # Auto upgrade nix package and the daemon service.
   nix = {
