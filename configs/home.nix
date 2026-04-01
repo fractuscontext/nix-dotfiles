@@ -6,8 +6,7 @@
 }:
 
 let
-  isDarwin = pkgs.stdenv.isDarwin;
-  isLinux = pkgs.stdenv.isLinux;
+  inherit (pkgs.stdenv) isDarwin isLinux;
   homeDirectory =
     if isDarwin then
       "/Users/${username}"

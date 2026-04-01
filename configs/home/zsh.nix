@@ -6,8 +6,7 @@
 }:
 
 let
-  isDarwin = pkgs.stdenv.isDarwin;
-  isLinux = pkgs.stdenv.isLinux;
+  inherit (pkgs.stdenv) isDarwin isLinux;
   homeDirectory = config.home.homeDirectory;
 in
 {
@@ -98,14 +97,36 @@ in
           ${pkgs.eza}/bin/eza --group-directories-first "$@"
         fi
       }
+
+      ${lib.optionalString isDarwin ''
+        fix-quarantine() { sudo xattr -rd com.apple.quarantine "$@"; }
+        rm() { echo "macOS: Use trash (or /bin/rm if you must)."; return 1; }
+      ''}
+
+      ${lib.optionalString isLinux ''
+        alias rm='rm -I'
+      ''}
+
+      # Function to nuke history entries starting with any of the provided arguments
+      history_nuke() {
+          if [[ $# -eq 0 ]]; then
+              echo "Usage: hdel <cmd1> <cmd2> ..."
+              return 1
+          fi
+          fc -W
+          local search_terms="''${(j:|:)@}"
+          local pattern="^(: [0-9]+:[0-9]+;)?($search_terms)"
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+              sed -i ''' -E "/$pattern/d" "$HISTFILE"
+          else
+              sed -i -E "/$pattern/d" "$HISTFILE"
+          fi
+          fc -R
+          echo "Nuked history entries starting with: ''${(j:, :)@}"
+      }
+
       # --- Welcome Banner ---
       ${pkgs.fortune-kind}/bin/fortune-kind | ${pkgs.cowsay}/bin/cowsay -f koala
-    ''
-    + lib.optionalString isDarwin ''
-      rm() { echo "macOS: Use trash."; return 1; }
-    ''
-    + lib.optionalString isLinux ''
-      alias rm='rm -I'
     '';
 
     # Merge common aliases with platform-specific ones

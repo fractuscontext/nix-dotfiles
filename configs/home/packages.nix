@@ -8,7 +8,7 @@
 }:
 
 let
-  isDarwin = pkgs.stdenv.isDarwin;
+  inherit (pkgs.stdenv) isDarwin;
   pkgs-stable = if isDarwin then pkgs-stable-darwin else pkgs-stable-linux;
 
   fonts = with pkgs; [
