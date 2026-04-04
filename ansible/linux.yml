@@ -1,0 +1,17 @@
+---
+- name: Linux configuration
+  hosts: localhost
+  connection: local
+  become: false
+
+  vars:
+    enable_ssh_config: true
+
+  pre_tasks:
+    - name: Skip if not Linux
+      ansible.builtin.meta: end_host
+      when: ansible_os_family == "Darwin"
+
+  tasks:
+    - name: SSH config
+      ansible.builtin.include_tasks: tasks/common/ssh-config.yml

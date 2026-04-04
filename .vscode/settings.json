@@ -13,5 +13,14 @@
     "editor.formatOnSave": true,
     "[nix]": {
         "editor.defaultFormatter": "jnoortheen.nix-ide"
+    },
+    "ansible.python.interpreterPath": "",
+    "ansible.validation.lint.enabled": true,
+    "ansible.validation.lint.path": "ansible-lint",
+    "[ansible]": {
+        "editor.defaultFormatter": "redhat.ansible"
+    },
+    "files.associations": {
+        "ansible/**/*.yml": "ansible"
     }
 }

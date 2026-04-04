@@ -1,0 +1,17 @@
+---
+- name: Enable Terminal Developer Mode
+  ansible.builtin.command: spctl developer-mode enable-terminal
+  changed_when: true
+
+- name: Mute startup chime
+  become: true
+  ansible.builtin.command: nvram StartupMute=%01
+  changed_when: true
+
+- name: Disable extended quarantine for downloads
+  become: true
+  community.general.osx_defaults:
+    domain: com.apple.LaunchServices
+    key: LSQuarantine
+    type: bool
+    value: false

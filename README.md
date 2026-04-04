@@ -1,44 +1,54 @@
 # ❄️ nix-dotfiles / fractuscontext
 
-A single-user `nix-darwin` + `home-manager` flake for my NixOS/nix-darwin setup.
+Single-user `nix-darwin` + `home-manager` flake
 
 ## Structure
 
-```
+```text
 .
-├── flake.nix              # Main flake (inputs + darwin config)
-├── rebuild-darwin.sh      # Auto-bootstrap & rebuild script
+├── flake.nix           # Flake inputs + darwin configuration
+├── run-darwin.sh       # Bootstrap & rebuild
+├── run-ansible.sh      # Ansible playbook runner
+├── ansible/            # Tasks for runtime-managed files
 └── configs/
-    ├── darwin.nix         # System-level macOS config
-    └── home.nix           # Home Manager (packages, dotfiles, programs)
+    ├── darwin.nix      # System-level macOS config
+    └── home.nix        # Home Manager entrypoint
+        ├── git.nix
+        ├── packages.nix
+        └── zsh.nix
 ```
 
-## 🛠️ Usage
+## Usage
 
-### Install Nix (if not installed) or Apply Configuration
 ```sh
-./rebuild-darwin.sh # uses Determinate Systems installer btw
+./run-darwin.sh        # install Nix (Determinate) + rebuild system
+./run-ansible.sh       # apply Ansible-managed configs
 ```
-*Automatically detects hostname (`$HOST` or `apple-seeds`) and builds the flake.*
 
-Targets `.#apple-seeds` by default. Override with `export HOST=other-machine` before running.
+Targets `.#apple-seeds` by default. Override with `export HOST=other-machine`.
 
-## What
-### System (darwin.nix)
-- **System Tweaks**:
-  - Blocks Apple OCSP (telemetry).
-  - Enables Terminal Developer Mode.
-  - Mutes startup chime.
+## What's in it
 
-### Home (home.nix)
-- **Mac App Util**: Properly links GUI apps to `/Applications/Nix Apps`.
-- **Packages**: LibreWolf, VSCodium, Ungoogled Chromium, Whisky, UTM, etc.
-- **Git**: SSH signing, main as default branch
-- **macOS defaults**: Finder list view, show hidden files, tap-to-click, battery %
-- **Zsh Config**: Powerlevel10k, syntax highlighting, and custom aliases.
+### System (`darwin.nix`)
 
-## NUR Overlay
+- Blocks Apple OCSP telemetry
+- Terminal Developer Mode
+- Muted startup chime
 
-Uses [`fractuscontext/nix-nur`](https://github.com/fractuscontext/nix-nur) for custom macOS app packages (auto-updated DMGs).
+### Home (`home.nix`)
 
-**License:** MIT, i mean, who cares 
+- **Packages** — LibreWolf, VSCodium, Ungoogled Chromium, Whisky, UTM, etc.
+- **Mac App Util** — links GUI apps to `/Applications/Nix Apps`
+- **Git** — SSH signing, `main` as default branch
+- **macOS defaults** — Finder list view, hidden files, tap-to-click, battery %
+- **Zsh** — Powerlevel10k, syntax highlighting, custom aliases
+
+### NUR
+
+Custom macOS app packages via [`fractuscontext/nix-nur`](https://github.com/fractuscontext/nix-nur) (auto-updated DMGs).
+
+## Why Ansible alongside Nix?
+
+Ansible handles files that programs write to at runtime (e.g. `~/.ssh/config`, `~/.kube/config`, `~/.gnupg/`). If only *you* edit it, keep it in Nix.
+
+**License:** MIT, i mean, who cares

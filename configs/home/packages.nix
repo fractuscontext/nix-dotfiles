@@ -35,6 +35,8 @@ let
     asciinema-agg
     nixd
     nixfmt
+    ansible
+    ansible-lint
   ];
 
   stablePackages = with pkgs-stable; [

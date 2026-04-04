@@ -1,0 +1,6 @@
+---
+- name: Load macOS playbook
+  ansible.builtin.import_playbook: darwin.yml
+
+- name: Load Linux playbook
+  ansible.builtin.import_playbook: linux.yml
