@@ -8,9 +8,9 @@
     enable_ssh_config: true
 
   pre_tasks:
-    - name: Skip if not Linux
-      ansible.builtin.meta: end_host
-      when: ansible_os_family == "Darwin"
+    - name: End play if not Linux
+      ansible.builtin.meta: end_play
+      when: ansible_facts['os_family'] == 'Darwin'
 
   tasks:
     - name: SSH config

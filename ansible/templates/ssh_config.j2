@@ -1,6 +1,6 @@
 Host *
   AddKeysToAgent yes
-{% if ansible_os_family == "Darwin" %}
+{% if ansible_facts.os_family == 'Darwin' %}
   UseKeychain yes
 {% endif %}
   IdentityFile ~/.ssh/id_ed25519

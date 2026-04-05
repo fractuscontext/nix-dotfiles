@@ -4,33 +4,32 @@
   connection: local
   become: false
 
+
   vars:
     enable_ssh_config: true
-    enable_block_apple_domains: true
+    enable_hosts_entries: true
     enable_macos_tweaks: true
-    blocked_domains:
-      - swdist.apple.com
-      - swscan.apple.com
-      - swcdn.apple.com
-      - xp.apple.com
-      - gdmf.apple.com
-      - mesu.apple.com
-      - updates.cdn-apple.com
-      - ocsp.apple.com
-      - ocsp2.apple.com
+    hosts_entry_sources:
+      - templates/blocked_domains.j2
+
+  handlers:
+    - name: Flush DNS cache
+      become: true
+      ansible.builtin.command: killall -HUP mDNSResponder
+      changed_when: false
 
   pre_tasks:
-    - name: Skip if not macOS
-      ansible.builtin.meta: end_host
-      when: ansible_os_family != "Darwin"
+    - name: End play if not macOS
+      ansible.builtin.meta: end_play
+      when: ansible_facts['os_family'] != 'Darwin'
 
   tasks:
     - name: SSH config
       ansible.builtin.include_tasks: tasks/common/ssh-config.yml
 
-    - name: Block Apple DNS domains
-      when: enable_block_apple_domains
-      ansible.builtin.include_tasks: tasks/darwin/dns-block.yml
+    - name: Manage /etc/hosts entries (Declarative)
+      when: enable_hosts_entries
+      ansible.builtin.include_tasks: tasks/common/hosts-entries.yml
 
     - name: macOS system tweaks # noqa: name[casing]
       when: enable_macos_tweaks

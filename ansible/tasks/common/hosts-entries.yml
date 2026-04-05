@@ -1,0 +1,17 @@
+---
+- name: Render hosts entry sources
+  ansible.builtin.set_fact:
+    _hosts_entries_content: "{{ _hosts_entries_content | default('') +
+      ((lookup('ansible.builtin.template', item) if item.endswith('.j2') else
+      lookup('ansible.builtin.file', item)) | trim) + '
+
+      ' }}"
+  loop: "{{ hosts_entry_sources }}"
+
+- name: Write entries to /etc/hosts
+  become: true
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED HOSTS ENTRIES"
+    block: "{{ _hosts_entries_content | trim }}"
+  notify: Flush DNS cache
