@@ -1,74 +1,73 @@
 {
   pkgs,
   lib,
-  pkgs-stable-linux ? null,
-  pkgs-stable-darwin ? null,
-  pkgs-haruka-darwin ? null,
+  pkgs-stable ? null,
+  pkgs-stable-overlay-darwin ? null,
   ...
 }:
 
 let
-  inherit (pkgs.stdenv) isDarwin;
-  pkgs-stable = if isDarwin then pkgs-stable-darwin else pkgs-stable-linux;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin isLinux;
 
   fonts = with pkgs; [
-    # Normal CLI apps & Fonts (Unstable)
     source-han-serif
     source-han-code-jp
     meslo-lgs-nf
   ];
 
-  unstablePackages = with pkgs; [
-    fortune-kind
-    cowsay
-    eza
-    bat
-    uv
-    htop
-    asciinema
-    asciinema-agg
-    nixd
-    nixfmt
-    git-filter-repo
-    ansible
-    ansible-lint
-  ];
+  unstablePackages =
+    with pkgs;
+    [
+      podman
+      podman-compose
+      fortune-kind
+      cowsay
+      eza
+      bat
+      uv
+      htop
+      asciinema
+      asciinema-agg
+      nixd
+      nixfmt
+      git-filter-repo
+      ansible
+      ansible-lint
+      reuse
+    ]
+    ++ lib.optionals isLinux [
+      # Nothing to add.
+    ]
+    ++ lib.optionals isDarwin [
+      qbittorrent
+      utm
+      iina
+      libreoffice-bin
+    ];
 
-  stablePackages = with pkgs-stable; [
-    # Heavy CLI apps (Stable)
-    ffmpeg
-    imagemagick
-    podman
-    unar
-  ];
+  stablePackages =
+    with pkgs-stable;
+    [
+      # Heavy CLI apps (Stable)
+      ffmpeg
+      imagemagick
+      unar
+    ]
+    ++ lib.optionals isDarwin (
+      with pkgs-stable-overlay-darwin;
+      [
+        # Heavy GUI apps (Stable)
+        remmina
+        wireshark
 
-  darwinGuiStable = with pkgs-stable; [
-    # Heavy GUI apps (Stable)
-    remmina
-    wireshark
-  ];
-
-  darwinGuiUnstable = with pkgs; [
-    # GUI apps that need unstable for binary cache
-    qbittorrent
-    utm
-    iina
-    libreoffice-bin
-  ];
-
-  darwinGuiHaruka = with pkgs-haruka-darwin; [
-    # Overlay GUI apps
-    librewolf
-    ungoogled-chromium
-    telegram-desktop
-    lunarfyi
-  ];
+        # Overlays
+        librewolf
+        ungoogled-chromium
+        telegram-desktop
+      ]
+    );
 
 in
 {
-  home.packages =
-    unstablePackages
-    ++ fonts
-    ++ stablePackages
-    ++ lib.optionals isDarwin (darwinGuiStable ++ darwinGuiUnstable ++ darwinGuiHaruka);
+  home.packages = unstablePackages ++ fonts ++ stablePackages;
 }

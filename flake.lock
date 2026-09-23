@@ -83,11 +83,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784363192,
-        "narHash": "sha256-8NlIhUf/ABlusfYGQy+a+SqaDo3PsRm7DUyq0ZaHFNE=",
+        "lastModified": 1789127767,
+        "narHash": "sha256-b+faKWMlrxBoU4XYTNdK0+AI4Z2euU0mivvSweKS9eM=",
         "owner": "fractuscontext",
         "repo": "nix-nur",
-        "rev": "4b55ba6a3d32c3bbe90064fa8fdb760165733659",
+        "rev": "5c85885197307d29594afb9990e810f2a1af4dde",
         "type": "github"
       },
       "original": {
@@ -103,11 +103,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784351324,
-        "narHash": "sha256-By+kuRJZRqs2TuXgtR8vJ8cTKWXw33YG/Yollu5cO1U=",
+        "lastModified": 1790128814,
+        "narHash": "sha256-6Gm9q+wW3E4Ey4F6wEbJAwaMsEK6hvCYfTW7yY64ZfA=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "460108009ca1ff69ca2ff19079ca2c838d6e3080",
+        "rev": "0b2f1129177f70c5f0f5d88bb53c49ca47d0bfc0",
         "type": "github"
       },
       "original": {
@@ -147,11 +147,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784123936,
-        "narHash": "sha256-IOWwQMJhUxcojm0MRvuKs1fKLH727u4+hHeEOPhdUyA=",
+        "lastModified": 1786845137,
+        "narHash": "sha256-oQFip+v0luP8NIxJzmiW4Wu8bILsbFWom5l0zonl8hQ=",
         "owner": "LnL7",
         "repo": "nix-darwin",
-        "rev": "a4cf1d10853b0d2be19b9eca35d749e201d70b55",
+        "rev": "4cff07de74b50e64bdd68cd4e722ab5b6b35ee48",
         "type": "github"
       },
       "original": {
@@ -191,34 +191,34 @@
         "type": "github"
       }
     },
-    "nixpkgs-stable-darwin": {
+    "nixpkgs-stable": {
       "locked": {
-        "lastModified": 1784255083,
-        "narHash": "sha256-0Jz8G3+3g6i/l4aISUri0EidLnREelCff0m6+pE6aZg=",
+        "lastModified": 1790172108,
+        "narHash": "sha256-Mp9pWvDZSiJr/huqcgXHFr403KCaZ0Yokcxq+m6ggRo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fc51889f81924f15fba77a3c0b79cfb3f78fe0d4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixpkgs-26.05-darwin",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs-stable-linux": {
-      "locked": {
-        "lastModified": 1784358777,
-        "narHash": "sha256-XpXWknSOdz1LLdWKYSGfsFTV7/p2dHIvbqE3QwTPJwI=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "89d03900e0831564799eb2ae30c2902cff71915d",
+        "rev": "2cc89aa2dd6d2990d2232e95b9778938651ebe67",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "ref": "release-26.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-stable-darwin": {
+      "locked": {
+        "lastModified": 1790071232,
+        "narHash": "sha256-S27lKsLB2rrtg/OfNIRsFTJJWXv1FLAhapm/P8HM2V8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e9b6aa075c9364c5d152b7657c41349998391daf",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-26.05-darwin",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -273,11 +273,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1784120854,
-        "narHash": "sha256-KesHgItiZPgGX740axSiQLcIQ8D24MDqNpkKYWIek8k=",
+        "lastModified": 1790046670,
+        "narHash": "sha256-MYiI+CzL0tuWgRPjGsKCDHqYs2T3OzMlMQWOYWG0qso=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "753cc8a3a87467296ddd1fa93f0cc3e81120ee46",
+        "rev": "6774f7bc253789b113a4f39285dc0fa100abeacc",
         "type": "github"
       },
       "original": {
@@ -294,8 +294,8 @@
         "mac-app-util": "mac-app-util",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs_5",
-        "nixpkgs-stable-darwin": "nixpkgs-stable-darwin",
-        "nixpkgs-stable-linux": "nixpkgs-stable-linux"
+        "nixpkgs-stable": "nixpkgs-stable",
+        "nixpkgs-stable-darwin": "nixpkgs-stable-darwin"
       }
     },
     "systems": {

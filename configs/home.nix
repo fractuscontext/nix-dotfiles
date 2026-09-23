@@ -6,7 +6,7 @@
 }:
 
 let
-  inherit (pkgs.stdenv) isDarwin isLinux;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin isLinux;
   homeDirectory =
     if isDarwin then
       "/Users/${username}"
@@ -17,9 +17,7 @@ let
 in
 {
   imports = [
-    ./home/packages.nix
-    ./home/zsh.nix
-    ./home/git.nix
+    ./home/.
   ];
 
   home = {
@@ -48,28 +46,6 @@ in
   programs.bash = {
     enable = true;
     bashrcExtra = "unset HISTFILE";
-  };
-
-  targets.darwin.defaults = lib.mkIf isDarwin {
-    NSGlobalDomain = {
-      AppleShowAllExtensions = true;
-      "com.apple.mouse.tapBehavior" = 1;
-    };
-    "com.apple.desktopservices" = {
-      DSDontWriteNetworkStores = true;
-      DSDontWriteUSBStores = true;
-    };
-    "com.apple.finder" = {
-      _FXSortFoldersFirst = true;
-      FXPreferredViewStyle = "Nlsv";
-      AppleShowAllFiles = true;
-      QuitMenuItem = true;
-      FXEnableExtensionChangeWarning = false;
-      ShowPathbar = true;
-    };
-    "com.apple.controlcenter" = {
-      BatteryShowPercentage = true;
-    };
   };
 
   # --- Linux (GNOME) Specific Settings ---

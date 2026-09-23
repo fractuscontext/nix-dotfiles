@@ -1,7 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable/";
-    nixpkgs-stable-linux.url = "github:NixOS/nixpkgs/release-26.05";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/release-26.05";
     nixpkgs-stable-darwin.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
 
     home-manager = {
@@ -28,7 +28,7 @@
     {
       self,
       nixpkgs,
-      nixpkgs-stable-linux,
+      nixpkgs-stable,
       nixpkgs-stable-darwin,
       home-manager,
       nix-darwin,
@@ -37,39 +37,47 @@
       ...
     }@inputs:
     let
+      # Host Mac Configuration
       username = "tsubasa";
       hostname = "CONSUMERISM";
-      darwinSystem = "aarch64-darwin";
-      pkgs-unstable-linux = nixpkgs.legacyPackages.x86_64-linux;
-      pkgs-stable-linux = nixpkgs-stable-linux.legacyPackages.x86_64-linux;
-      pkgs-stable-darwin = nixpkgs-stable-darwin.legacyPackages.${darwinSystem};
+      darwinArch = "aarch64-darwin";
+      linuxArch = "x86_64-linux";
 
-      pkgs-haruka-darwin = import nixpkgs {
-        system = darwinSystem;
+      pkgs-stable-overlay-darwin = import nixpkgs-stable-darwin {
+        system = darwinArch;
+        config.allowUnfree = true;
         overlays = [ haruka-nur.overlays.mac-apps ];
       };
     in
     {
       darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
-        system = darwinSystem;
+        system = darwinArch;
         specialArgs = { inherit inputs username hostname; };
         modules = [
           mac-app-util.darwinModules.default
           home-manager.darwinModules.home-manager
-          ./configs/darwin.nix
+          ./configs/nix-darwin.nix
           {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit username pkgs-haruka-darwin pkgs-stable-darwin; };
-            home-manager.sharedModules = [ mac-app-util.homeManagerModules.default ];
-            home-manager.users.${username} = import ./configs/home.nix;
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = {
+                inherit username pkgs-stable-overlay-darwin;
+                pkgs-stable = pkgs-stable-overlay-darwin;
+              };
+              sharedModules = [ mac-app-util.homeManagerModules.default ];
+              users.${username} = import ./configs/home.nix;
+            };
           }
         ];
       };
 
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
-        pkgs = pkgs-unstable-linux;
-        extraSpecialArgs = { inherit username pkgs-stable-linux; };
+        pkgs = nixpkgs.legacyPackages.${linuxArch};
+        extraSpecialArgs = {
+          inherit username;
+          pkgs-stable = nixpkgs-stable.legacyPackages.${linuxArch};
+        };
         modules = [ ./configs/home.nix ];
       };
     };
